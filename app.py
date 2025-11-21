@@ -15,7 +15,7 @@ st.markdown("""
     .stApp { background-color: #121212; color: #E0E0E0; }
     h1, h2, h3 { color: #FFFFFF !important; }
     
-    /* TARJETAS (LISTA) */
+    /* TARJETAS */
     .gig-card {
         background-color: #1E1E1E;
         border-radius: 15px;
@@ -30,52 +30,29 @@ st.markdown("""
     
     .gig-venue { font-size: 1.5em; font-weight: bold; color: #FFFFFF; }
     
-    /* CAJA DE FECHA MEJORADA */
+    /* CAJA DE FECHA */
     .date-box { 
-        background-color: #2C2C2C; 
-        border-radius: 10px; 
-        text-align: center; 
-        padding: 8px 12px; /* Un poco más ancho */
-        min-width: 80px;
+        background-color: #2C2C2C; border-radius: 10px; text-align: center; 
+        padding: 8px 12px; min-width: 80px;
     }
-    .date-week { 
-        font-size: 0.85em; 
-        color: #B0B0B0; /* Gris claro */
-        font-weight: bold; 
-        text-transform: uppercase;
-        margin-bottom: -5px; /* Pegarlo un poco al número */
-    }
-    .date-day { 
-        font-size: 2.2em; 
-        font-weight: 900; 
-        color: #FFF; 
-        line-height: 1.1; 
-    }
-    .date-month { 
-        color: #FFAB00; 
-        font-weight: bold; 
-        text-transform: uppercase; 
-        font-size: 0.8em; 
-    }
+    .date-week { font-size: 0.85em; color: #B0B0B0; font-weight: bold; text-transform: uppercase; margin-bottom: -5px; }
+    .date-day { font-size: 2.2em; font-weight: 900; color: #FFF; line-height: 1.1; }
+    .date-month { color: #FFAB00; font-weight: bold; text-transform: uppercase; font-size: 0.8em; }
     
     .highlight-time { color: #4FC3F7; font-weight: bold; }
 
-    /* CALENDARIO VISUAL */
+    /* CALENDARIO */
     .calendar-container { background-color: #1E1E1E; padding: 20px; border-radius: 15px; text-align: center; }
     table.calendar-table { width: 100%; border-collapse: collapse; color: #FFF; font-family: sans-serif; }
     th { color: #FFAB00; padding: 10px; text-transform: uppercase; font-size: 0.8em; }
     td { padding: 15px; text-align: center; border: 1px solid #333; width: 14%; height: 60px; vertical-align: middle; }
     
-    .gig-day {
-        background-color: #D50000; color: white; font-weight: bold; border-radius: 50%;
-        box-shadow: 0 0 10px rgba(213, 0, 0, 0.6); display: inline-block;
-        width: 35px; height: 35px; line-height: 35px;
-    }
-    .today-day {
-        border: 2px solid #FFAB00; border-radius: 50%; display: inline-block;
-        width: 35px; height: 35px; line-height: 31px;
-    }
+    .gig-day { background-color: #D50000; color: white; font-weight: bold; border-radius: 50%; display: inline-block; width: 35px; height: 35px; line-height: 35px; }
+    .today-day { border: 2px solid #FFAB00; border-radius: 50%; display: inline-block; width: 35px; height: 35px; line-height: 31px; }
     .empty-day { background-color: transparent; }
+
+    /* BOTONES PERSONALIZADOS */
+    .stButton button { width: 100%; border-radius: 8px !important; }
     
     .stTabs [data-baseweb="tab-list"] { gap: 10px; }
     .stTabs [data-baseweb="tab"] { background-color: #2C2C2C; border-radius: 5px; color: white; }
@@ -84,14 +61,13 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- FUNCIONES DE TRADUCCIÓN ---
+# --- FUNCIONES ---
 def traducir_mes(fecha_obj):
     meses = {"Jan": "ENE", "Feb": "FEB", "Mar": "MAR", "Apr": "ABR", "May": "MAY", "Jun": "JUN",
              "Jul": "JUL", "Aug": "AGO", "Sep": "SEP", "Oct": "OCT", "Nov": "NOV", "Dec": "DIC"}
     return meses.get(fecha_obj.strftime('%b'), fecha_obj.strftime('%b'))
 
 def traducir_dia_semana(fecha_obj):
-    # weekday() devuelve 0 para lunes, 6 para domingo
     dias = {0: "LUN", 1: "MAR", 2: "MIÉ", 3: "JUE", 4: "VIE", 5: "SÁB", 6: "DOM"}
     return dias[fecha_obj.weekday()]
 
@@ -103,8 +79,7 @@ def nombre_mes_espanol(numero_mes):
 def crear_html_calendario(year, month, dias_conciertos):
     cal = calendar.Calendar()
     semanas = cal.monthdayscalendar(year, month)
-    html = '<div class="calendar-container"><table class="calendar-table">'
-    html += '<thead><tr><th>L</th><th>M</th><th>M</th><th>J</th><th>V</th><th>S</th><th>D</th></tr></thead><tbody>'
+    html = '<div class="calendar-container"><table class="calendar-table"><thead><tr><th>L</th><th>M</th><th>M</th><th>J</th><th>V</th><th>S</th><th>D</th></tr></thead><tbody>'
     hoy = datetime.now()
     for semana in semanas:
         html += '<tr>'
@@ -143,21 +118,21 @@ if not df.empty:
     
     with tab_lista:
         for index, row in df.iterrows():
+            # Estilos
             estado = row.get('Estado', 'Pendiente')
             clase_estado, emoji = ("status-confirmado", "✅") if estado == "Confirmado" else \
                                   ("status-cancelado", "❌") if estado == "Cancelado" else \
                                   ("status-pendiente", "⚠️")
             
-            # Cálculos de fecha
-            dia_num = row['Fecha'].day
-            mes_nom = traducir_mes(row['Fecha'])
-            dia_sem = traducir_dia_semana(row['Fecha']) # <--- NUEVO DATO
+            dia_num, mes_nom, dia_sem = row['Fecha'].day, traducir_mes(row['Fecha']), traducir_dia_semana(row['Fecha'])
             
+            # Renderizar Tarjeta HTML
             st.markdown(f"""
             <div class="gig-card {clase_estado}">
                 <div style="display: flex; align-items: center;">
                     <div class="date-box" style="margin-right: 15px;">
-                        <div class="date-week">{dia_sem}</div> <div class="date-day">{dia_num}</div>
+                        <div class="date-week">{dia_sem}</div>
+                        <div class="date-day">{dia_num}</div>
                         <div class="date-month">{mes_nom}</div>
                     </div>
                     <div style="flex-grow: 1;">
@@ -173,8 +148,23 @@ if not df.empty:
             </div>
             """, unsafe_allow_html=True)
             
-            if pd.notna(row.get('Mapa')) and str(row.get('Mapa')).startswith('http'):
-                st.link_button("🗺️ Ver Ubicación", row['Mapa'])
+            # --- ZONA DE BOTONES (MAPA Y REPERTORIO) ---
+            # Verificamos qué links tenemos disponibles
+            link_mapa = row.get('Mapa') if pd.notna(row.get('Mapa')) and str(row.get('Mapa')).startswith('http') else None
+            link_rep = row.get('Repertorio') if pd.notna(row.get('Repertorio')) and str(row.get('Repertorio')).startswith('http') else None
+
+            if link_mapa or link_rep:
+                # Si hay los dos, usamos columnas para ponerlos lado a lado
+                if link_mapa and link_rep:
+                    c1, c2 = st.columns(2)
+                    with c1: st.link_button("🗺️ Ver Ubicación", link_mapa)
+                    with c2: st.link_button("📄 Ver Repertorio (PDF)", link_rep)
+                # Si solo hay mapa
+                elif link_mapa:
+                    st.link_button("🗺️ Ver Ubicación", link_mapa)
+                # Si solo hay repertorio
+                elif link_rep:
+                    st.link_button("📄 Ver Repertorio (PDF)", link_rep)
 
     with tab_cal:
         st.write("Visualización mensual.")
