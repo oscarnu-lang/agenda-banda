@@ -51,9 +51,7 @@ st.markdown("""
     .today-day { border: 2px solid #FFAB00; border-radius: 50%; display: inline-block; width: 35px; height: 35px; line-height: 31px; }
     .empty-day { background-color: transparent; }
 
-    /* BOTONES PERSONALIZADOS */
     .stButton button { width: 100%; border-radius: 8px !important; }
-    
     .stTabs [data-baseweb="tab-list"] { gap: 10px; }
     .stTabs [data-baseweb="tab"] { background-color: #2C2C2C; border-radius: 5px; color: white; }
     .stTabs [aria-selected="true"] { background-color: #FFAB00 !important; color: black !important; }
@@ -104,70 +102,91 @@ def load_data():
 # --- APP PRINCIPAL ---
 st.title("🎸 AGENDA OFICIAL")
 
+# Carga de datos
 df = load_data()
-col_spacer, col_btn = st.columns([3,1])
+
+# 1. INTERRUPTOR DE HISTORIAL (NUEVO)
+col_switch, col_btn = st.columns([3,1])
+with col_switch:
+    # Por defecto es False (NO mostrar pasados)
+    mostrar_historial = st.toggle("Mostrar fechas pasadas", value=False)
 with col_btn:
-    if st.button("🔄 Actualizar"): st.cache_data.clear()
+    if st.button("🔄"): st.cache_data.clear()
 
 if not df.empty:
+    # Procesar Fechas
     df["Fecha"] = pd.to_datetime(df["Fecha"], errors='coerce', dayfirst=True)
     df = df.dropna(subset=['Fecha']).sort_values(by="Fecha")
+    
+    # --- LÓGICA DE FILTRADO (NUEVO) ---
+    hoy = pd.Timestamp.now().normalize() # Fecha de hoy sin hora (00:00:00)
+    
+    if mostrar_historial:
+        # Si el switch está activo, mostramos TODO
+        df_visible = df
+        texto_info = f"Mostrando todo el historial ({len(df)} eventos)"
+    else:
+        # Si no, mostramos solo desde hoy en adelante
+        df_visible = df[df["Fecha"] >= hoy]
+        texto_info = f"Próximos conciertos: {len(df_visible)}"
+
+    # Mostrar contador pequeño
+    st.caption(texto_info)
+
+    # Lista para el calendario (el calendario SIEMPRE muestra todo para referencia visual)
     fechas_conciertos = df["Fecha"].dt.strftime('%Y-%m-%d').unique().tolist()
 
     tab_lista, tab_cal = st.tabs(["📋 Lista de Shows", "📅 Ver Calendario"])
     
     with tab_lista:
-        for index, row in df.iterrows():
-            # Estilos
-            estado = row.get('Estado', 'Pendiente')
-            clase_estado, emoji = ("status-confirmado", "✅") if estado == "Confirmado" else \
-                                  ("status-cancelado", "❌") if estado == "Cancelado" else \
-                                  ("status-pendiente", "⚠️")
-            
-            dia_num, mes_nom, dia_sem = row['Fecha'].day, traducir_mes(row['Fecha']), traducir_dia_semana(row['Fecha'])
-            
-            # Renderizar Tarjeta HTML
-            st.markdown(f"""
-            <div class="gig-card {clase_estado}">
-                <div style="display: flex; align-items: center;">
-                    <div class="date-box" style="margin-right: 15px;">
-                        <div class="date-week">{dia_sem}</div>
-                        <div class="date-day">{dia_num}</div>
-                        <div class="date-month">{mes_nom}</div>
+        if df_visible.empty:
+            st.info("🎉 ¡No hay fechas pendientes! (Activa 'Mostrar fechas pasadas' para ver el historial)")
+        else:
+            for index, row in df_visible.iterrows():
+                # Estilos
+                estado = row.get('Estado', 'Pendiente')
+                clase_estado, emoji = ("status-confirmado", "✅") if estado == "Confirmado" else \
+                                      ("status-cancelado", "❌") if estado == "Cancelado" else \
+                                      ("status-pendiente", "⚠️")
+                
+                dia_num, mes_nom, dia_sem = row['Fecha'].day, traducir_mes(row['Fecha']), traducir_dia_semana(row['Fecha'])
+                
+                # Renderizar Tarjeta
+                st.markdown(f"""
+                <div class="gig-card {clase_estado}">
+                    <div style="display: flex; align-items: center;">
+                        <div class="date-box" style="margin-right: 15px;">
+                            <div class="date-week">{dia_sem}</div>
+                            <div class="date-day">{dia_num}</div>
+                            <div class="date-month">{mes_nom}</div>
+                        </div>
+                        <div style="flex-grow: 1;">
+                            <div class="gig-venue">{row['Lugar']}</div>
+                            <div style="color: #aaa; font-style: italic;">{row.get('Ciudad','')}</div>
+                            <div style="margin-top: 5px; color: #fff;">⏰ {row['Hora']} hs | {emoji} {estado}</div>
+                        </div>
                     </div>
-                    <div style="flex-grow: 1;">
-                        <div class="gig-venue">{row['Lugar']}</div>
-                        <div style="color: #aaa; font-style: italic;">{row.get('Ciudad','')}</div>
-                        <div style="margin-top: 5px; color: #fff;">⏰ {row['Hora']} hs | {emoji} {estado}</div>
-                    </div>
+                    {'<div style="margin-top:10px; border-top:1px solid #444; padding-top:5px; font-size:0.9em; color:#ccc;">' + 
+                     (f'🚐 Salida: <span class="highlight-time">{row["Salida"]}</span> &nbsp; ' if pd.notna(row.get("Salida")) else "") +
+                     (f'🎤 Prueba: <span class="highlight-time">{row["Prueba"]}</span>' if pd.notna(row.get("Prueba")) else "") +
+                     '</div>' if (pd.notna(row.get("Salida")) or pd.notna(row.get("Prueba"))) else ""}
                 </div>
-                {'<div style="margin-top:10px; border-top:1px solid #444; padding-top:5px; font-size:0.9em; color:#ccc;">' + 
-                 (f'🚐 Salida: <span class="highlight-time">{row["Salida"]}</span> &nbsp; ' if pd.notna(row.get("Salida")) else "") +
-                 (f'🎤 Prueba: <span class="highlight-time">{row["Prueba"]}</span>' if pd.notna(row.get("Prueba")) else "") +
-                 '</div>' if (pd.notna(row.get("Salida")) or pd.notna(row.get("Prueba"))) else ""}
-            </div>
-            """, unsafe_allow_html=True)
-            
-            # --- ZONA DE BOTONES (MAPA Y REPERTORIO) ---
-            # Verificamos qué links tenemos disponibles
-            link_mapa = row.get('Mapa') if pd.notna(row.get('Mapa')) and str(row.get('Mapa')).startswith('http') else None
-            link_rep = row.get('Repertorio') if pd.notna(row.get('Repertorio')) and str(row.get('Repertorio')).startswith('http') else None
+                """, unsafe_allow_html=True)
+                
+                # Botones
+                link_mapa = row.get('Mapa') if pd.notna(row.get('Mapa')) and str(row.get('Mapa')).startswith('http') else None
+                link_rep = row.get('Repertorio') if pd.notna(row.get('Repertorio')) and str(row.get('Repertorio')).startswith('http') else None
 
-            if link_mapa or link_rep:
-                # Si hay los dos, usamos columnas para ponerlos lado a lado
-                if link_mapa and link_rep:
-                    c1, c2 = st.columns(2)
-                    with c1: st.link_button("🗺️ Ver Ubicación", link_mapa)
-                    with c2: st.link_button("📄 Ver Repertorio (PDF)", link_rep)
-                # Si solo hay mapa
-                elif link_mapa:
-                    st.link_button("🗺️ Ver Ubicación", link_mapa)
-                # Si solo hay repertorio
-                elif link_rep:
-                    st.link_button("📄 Ver Repertorio (PDF)", link_rep)
+                if link_mapa or link_rep:
+                    if link_mapa and link_rep:
+                        c1, c2 = st.columns(2)
+                        with c1: st.link_button("🗺️ Ver Ubicación", link_mapa)
+                        with c2: st.link_button("📄 Ver Repertorio", link_rep)
+                    elif link_mapa: st.link_button("🗺️ Ver Ubicación", link_mapa)
+                    elif link_rep: st.link_button("📄 Ver Repertorio", link_rep)
 
     with tab_cal:
-        st.write("Visualización mensual.")
+        st.write("Calendario Mensual")
         col_year, col_month = st.columns(2)
         with col_year: year_sel = st.number_input("Año", value=datetime.now().year, step=1)
         with col_month:
@@ -176,7 +195,7 @@ if not df.empty:
         
         st.markdown(f"<h3 style='text-align: center; color: #FFAB00;'>{nombre_mes_espanol(month_sel)} {year_sel}</h3>", unsafe_allow_html=True)
         st.markdown(crear_html_calendario(year_sel, month_sel, fechas_conciertos), unsafe_allow_html=True)
-        st.caption("🔴 Rojo: Día de Concierto | 🟡 Círculo: Hoy")
+        st.caption("🔴 Rojo: Concierto | 🟡 Círculo: Hoy")
 
 else:
     st.error("No hay datos. Verifica el enlace CSV.")
