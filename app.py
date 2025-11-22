@@ -2,27 +2,61 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 import calendar
+import base64
+import os
 
 # --- CONFIGURACIÓN INICIAL ---
-st.set_page_config(page_title="Agenda Banda", page_icon="🎸", layout="centered")
+st.set_page_config(page_title="Agenda Banda Departamental", page_icon="🎸", layout="centered")
 
 # ¡¡¡ TU ENLACE CSV AQUÍ !!!
 SHEET_ID = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSIK5nAcesnNerJZXhriHGeVXzZ9rcWnMl4pZkQlaJ6Y_F_BLUB14VtveXaqHff3wFPnkgvf1L7qx_o/pub?output=csv"
 
-# --- ESTILOS CSS ---
+# --- FUNCIÓN MAGICA PARA EL FONDO (BASE64) ---
+def get_base64_of_bin_file(bin_file):
+    with open(bin_file, 'rb') as f:
+        data = f.read()
+    return base64.b64encode(data).decode()
+
+def set_png_as_page_bg(png_file):
+    try:
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        full_path = os.path.join(current_dir, png_file)
+        bin_str = get_base64_of_bin_file(full_path) 
+        
+        page_bg_img = f'''
+        <style>
+        .stApp {{
+            background-image: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.8)), url("data:image/jpg;base64,{bin_str}");
+            background-size: cover;
+            background-position: center center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+        }}
+        </style>
+        '''
+        st.markdown(page_bg_img, unsafe_allow_html=True)
+    except FileNotFoundError:
+        st.markdown('<style>.stApp { background-color: #121212; }</style>', unsafe_allow_html=True)
+
+# Ejecutamos fondo
+set_png_as_page_bg("fondo.jpg")
+
+# --- ESTILOS GENERALES (CSS MEJORADO PARA BOTONES) ---
 st.markdown("""
 <style>
-    .stApp { background-color: #121212; color: #E0E0E0; }
-    h1, h2, h3 { color: #FFFFFF !important; }
+    /* Estilos generales */
+    .stApp, h1, h2, h3, p, div { color: #E0E0E0; }
+    h1, h2, h3 { color: #FFFFFF !important; text-shadow: 2px 2px 4px #000000; }
     
     /* TARJETAS */
     .gig-card {
-        background-color: #1E1E1E;
+        background-color: rgba(20, 20, 20, 0.90); /* Un poco más oscuro para contraste */
         border-radius: 15px;
         padding: 20px;
         margin-bottom: 25px;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.8);
         border-left: 8px solid #555;
+        backdrop-filter: blur(8px);
     }
     .status-confirmado { border-left-color: #00C853 !important; }
     .status-pendiente { border-left-color: #FFAB00 !important; }
@@ -33,7 +67,7 @@ st.markdown("""
     /* CAJA DE FECHA */
     .date-box { 
         background-color: #2C2C2C; border-radius: 10px; text-align: center; 
-        padding: 8px 12px; min-width: 80px;
+        padding: 8px 12px; min-width: 80px; border: 1px solid #444;
     }
     .date-week { font-size: 0.85em; color: #B0B0B0; font-weight: bold; text-transform: uppercase; margin-bottom: -5px; }
     .date-day { font-size: 2.2em; font-weight: 900; color: #FFF; line-height: 1.1; }
@@ -42,19 +76,52 @@ st.markdown("""
     .highlight-time { color: #4FC3F7; font-weight: bold; }
 
     /* CALENDARIO */
-    .calendar-container { background-color: #1E1E1E; padding: 20px; border-radius: 15px; text-align: center; }
+    .calendar-container { 
+        background-color: rgba(30, 30, 30, 0.9);
+        padding: 20px; border-radius: 15px; text-align: center; 
+        backdrop-filter: blur(5px);
+    }
     table.calendar-table { width: 100%; border-collapse: collapse; color: #FFF; font-family: sans-serif; }
     th { color: #FFAB00; padding: 10px; text-transform: uppercase; font-size: 0.8em; }
     td { padding: 15px; text-align: center; border: 1px solid #333; width: 14%; height: 60px; vertical-align: middle; }
     
-    .gig-day { background-color: #D50000; color: white; font-weight: bold; border-radius: 50%; display: inline-block; width: 35px; height: 35px; line-height: 35px; }
+    /* CÍRCULO ROJO */
+    a.gig-link { text-decoration: none; display: inline-block; width: 100%; height: 100%; }
+    .gig-day { 
+        background-color: #D50000; color: white; font-weight: bold; border-radius: 50%; 
+        display: inline-block; width: 35px; height: 35px; line-height: 35px; 
+        transition: transform 0.2s; cursor: pointer;
+    }
+    .gig-day:hover { transform: scale(1.2); box-shadow: 0 0 15px rgba(255, 0, 0, 0.8); }
     .today-day { border: 2px solid #FFAB00; border-radius: 50%; display: inline-block; width: 35px; height: 35px; line-height: 31px; }
     .empty-day { background-color: transparent; }
 
-    .stButton button { width: 100%; border-radius: 8px !important; }
+    /* --- BOTONES DE ALTO CONTRASTE (NUEVO) --- */
+    /* Apuntamos directamente a los enlaces generados por st.link_button */
+    div[data-testid="stLinkButton"] > a {
+        background-color: #FFAB00 !important; /* Fondo Naranja Intenso */
+        color: #000000 !important; /* Texto Negro */
+        border: none !important;
+        font-weight: 800 !important; /* Letra gruesa */
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-radius: 8px !important;
+        transition: all 0.3s ease;
+        text-align: center;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.4); /* Sombrita para que resalte */
+    }
+    
+    div[data-testid="stLinkButton"] > a:hover {
+        background-color: #FFD740 !important; /* Un poco más claro al pasar el mouse */
+        color: #000 !important;
+        transform: translateY(-2px); /* Se levanta un poquito */
+        box-shadow: 0 6px 10px rgba(0,0,0,0.6);
+    }
+
+    /* Tabs */
     .stTabs [data-baseweb="tab-list"] { gap: 10px; }
-    .stTabs [data-baseweb="tab"] { background-color: #2C2C2C; border-radius: 5px; color: white; }
-    .stTabs [aria-selected="true"] { background-color: #FFAB00 !important; color: black !important; }
+    .stTabs [data-baseweb="tab"] { background-color: rgba(44, 44, 44, 0.9); border-radius: 5px; color: white; }
+    .stTabs [aria-selected="true"] { background-color: #FFAB00 !important; color: black !important; font-weight: bold; }
 
 </style>
 """, unsafe_allow_html=True)
@@ -84,12 +151,54 @@ def crear_html_calendario(year, month, dias_conciertos):
         for dia in semana:
             if dia == 0: html += '<td class="empty-day"></td>'
             else:
-                clase = ""
-                if f"{year}-{month:02d}-{dia:02d}" in dias_conciertos: clase = "gig-day"
-                elif dia == hoy.day and month == hoy.month and year == hoy.year: clase = "today-day"
-                html += f'<td><span class="{clase}">{dia}</span></td>' if clase else f'<td>{dia}</td>'
+                fecha_str = f"{year}-{month:02d}-{dia:02d}"
+                if fecha_str in dias_conciertos:
+                    html += f'<td><a class="gig-link" href="?fecha={fecha_str}" target="_self"><span class="gig-day">{dia}</span></a></td>'
+                elif dia == hoy.day and month == hoy.month and year == hoy.year: 
+                     html += f'<td><span class="today-day">{dia}</span></td>'
+                else: html += f'<td>{dia}</td>'
         html += '</tr>'
     return html + '</tbody></table></div>'
+
+def renderizar_tarjeta(row):
+    estado = row.get('Estado', 'Pendiente')
+    clase_estado, emoji = ("status-confirmado", "✅") if estado == "Confirmado" else \
+                          ("status-cancelado", "❌") if estado == "Cancelado" else \
+                          ("status-pendiente", "⚠️")
+    dia_num, mes_nom, dia_sem = row['Fecha'].day, traducir_mes(row['Fecha']), traducir_dia_semana(row['Fecha'])
+    
+    st.markdown(f"""
+    <div class="gig-card {clase_estado}">
+        <div style="display: flex; align-items: center;">
+            <div class="date-box" style="margin-right: 15px;">
+                <div class="date-week">{dia_sem}</div>
+                <div class="date-day">{dia_num}</div>
+                <div class="date-month">{mes_nom}</div>
+            </div>
+            <div style="flex-grow: 1;">
+                <div class="gig-venue">{row['Lugar']}</div>
+                <div style="color: #aaa; font-style: italic;">{row.get('Ciudad','')}</div>
+                <div style="margin-top: 5px; color: #fff;">⏰ {row['Hora']} hs | {emoji} {estado}</div>
+            </div>
+        </div>
+        {'<div style="margin-top:10px; border-top:1px solid #444; padding-top:5px; font-size:0.9em; color:#ccc;">' + 
+            (f'🚐 Salida: <span class="highlight-time">{row["Salida"]}</span> &nbsp; ' if pd.notna(row.get("Salida")) else "") +
+            (f'🎤 Prueba: <span class="highlight-time">{row["Prueba"]}</span>' if pd.notna(row.get("Prueba")) else "") +
+            '</div>' if (pd.notna(row.get("Salida")) or pd.notna(row.get("Prueba"))) else ""}
+    </div>
+    """, unsafe_allow_html=True)
+    
+    link_mapa = row.get('Mapa') if pd.notna(row.get('Mapa')) and str(row.get('Mapa')).startswith('http') else None
+    link_rep = row.get('Repertorio') if pd.notna(row.get('Repertorio')) and str(row.get('Repertorio')).startswith('http') else None
+
+    # Botones
+    if link_mapa or link_rep:
+        if link_mapa and link_rep:
+            c1, c2 = st.columns(2)
+            with c1: st.link_button("🗺️ Ver Ubicación", link_mapa)
+            with c2: st.link_button("📄 Ver Repertorio", link_rep)
+        elif link_mapa: st.link_button("🗺️ Ver Ubicación", link_mapa)
+        elif link_rep: st.link_button("📄 Ver Repertorio", link_rep)
 
 @st.cache_data(ttl=60)
 def load_data():
@@ -100,102 +209,61 @@ def load_data():
     except: return pd.DataFrame()
 
 # --- APP PRINCIPAL ---
-st.title("🎸 AGENDA OFICIAL")
+st.title("🎸 Agenda Banda Departamental")
 
-# Carga de datos
 df = load_data()
-
-# 1. INTERRUPTOR DE HISTORIAL (NUEVO)
-col_switch, col_btn = st.columns([3,1])
-with col_switch:
-    # Por defecto es False (NO mostrar pasados)
-    mostrar_historial = st.toggle("Mostrar fechas pasadas", value=False)
-with col_btn:
-    if st.button("🔄"): st.cache_data.clear()
+query_params = st.query_params
+filtro_fecha = query_params.get("fecha", None)
 
 if not df.empty:
-    # Procesar Fechas
     df["Fecha"] = pd.to_datetime(df["Fecha"], errors='coerce', dayfirst=True)
     df = df.dropna(subset=['Fecha']).sort_values(by="Fecha")
-    
-    # --- LÓGICA DE FILTRADO (NUEVO) ---
-    hoy = pd.Timestamp.now().normalize() # Fecha de hoy sin hora (00:00:00)
-    
-    if mostrar_historial:
-        # Si el switch está activo, mostramos TODO
-        df_visible = df
-        texto_info = f"Mostrando todo el historial ({len(df)} eventos)"
-    else:
-        # Si no, mostramos solo desde hoy en adelante
-        df_visible = df[df["Fecha"] >= hoy]
-        texto_info = f"Próximos conciertos: {len(df_visible)}"
-
-    # Mostrar contador pequeño
-    st.caption(texto_info)
-
-    # Lista para el calendario (el calendario SIEMPRE muestra todo para referencia visual)
     fechas_conciertos = df["Fecha"].dt.strftime('%Y-%m-%d').unique().tolist()
+    hoy = pd.Timestamp.now().normalize()
 
-    tab_lista, tab_cal = st.tabs(["📋 Lista de Shows", "📅 Ver Calendario"])
-    
-    with tab_lista:
-        if df_visible.empty:
-            st.info("🎉 ¡No hay fechas pendientes! (Activa 'Mostrar fechas pasadas' para ver el historial)")
-        else:
-            for index, row in df_visible.iterrows():
-                # Estilos
-                estado = row.get('Estado', 'Pendiente')
-                clase_estado, emoji = ("status-confirmado", "✅") if estado == "Confirmado" else \
-                                      ("status-cancelado", "❌") if estado == "Cancelado" else \
-                                      ("status-pendiente", "⚠️")
-                
-                dia_num, mes_nom, dia_sem = row['Fecha'].day, traducir_mes(row['Fecha']), traducir_dia_semana(row['Fecha'])
-                
-                # Renderizar Tarjeta
-                st.markdown(f"""
-                <div class="gig-card {clase_estado}">
-                    <div style="display: flex; align-items: center;">
-                        <div class="date-box" style="margin-right: 15px;">
-                            <div class="date-week">{dia_sem}</div>
-                            <div class="date-day">{dia_num}</div>
-                            <div class="date-month">{mes_nom}</div>
-                        </div>
-                        <div style="flex-grow: 1;">
-                            <div class="gig-venue">{row['Lugar']}</div>
-                            <div style="color: #aaa; font-style: italic;">{row.get('Ciudad','')}</div>
-                            <div style="margin-top: 5px; color: #fff;">⏰ {row['Hora']} hs | {emoji} {estado}</div>
-                        </div>
-                    </div>
-                    {'<div style="margin-top:10px; border-top:1px solid #444; padding-top:5px; font-size:0.9em; color:#ccc;">' + 
-                     (f'🚐 Salida: <span class="highlight-time">{row["Salida"]}</span> &nbsp; ' if pd.notna(row.get("Salida")) else "") +
-                     (f'🎤 Prueba: <span class="highlight-time">{row["Prueba"]}</span>' if pd.notna(row.get("Prueba")) else "") +
-                     '</div>' if (pd.notna(row.get("Salida")) or pd.notna(row.get("Prueba"))) else ""}
-                </div>
-                """, unsafe_allow_html=True)
-                
-                # Botones
-                link_mapa = row.get('Mapa') if pd.notna(row.get('Mapa')) and str(row.get('Mapa')).startswith('http') else None
-                link_rep = row.get('Repertorio') if pd.notna(row.get('Repertorio')) and str(row.get('Repertorio')).startswith('http') else None
+    if filtro_fecha:
+        if st.button("⬅️ VOLVER A LA AGENDA COMPLETA", type="primary"):
+            st.query_params.clear()
+            st.rerun()
+        st.divider()
+        try:
+            fecha_dt = pd.to_datetime(filtro_fecha)
+            df_filtrado = df[df["Fecha"] == fecha_dt]
+            if not df_filtrado.empty:
+                st.write(f"📅 Detalle del día: {fecha_dt.strftime('%d/%m/%Y')}")
+                for index, row in df_filtrado.iterrows():
+                    renderizar_tarjeta(row)
+            else:
+                st.warning("No se encontraron datos para esta fecha.")
+        except: st.error("Error leyendo la fecha.")
 
-                if link_mapa or link_rep:
-                    if link_mapa and link_rep:
-                        c1, c2 = st.columns(2)
-                        with c1: st.link_button("🗺️ Ver Ubicación", link_mapa)
-                        with c2: st.link_button("📄 Ver Repertorio", link_rep)
-                    elif link_mapa: st.link_button("🗺️ Ver Ubicación", link_mapa)
-                    elif link_rep: st.link_button("📄 Ver Repertorio", link_rep)
+    else:
+        col_switch, col_btn = st.columns([3,1])
+        with col_switch: mostrar_historial = st.toggle("Mostrar pasados", value=False)
+        with col_btn: 
+            if st.button("🔄"): st.cache_data.clear()
 
-    with tab_cal:
-        st.write("Calendario Mensual")
-        col_year, col_month = st.columns(2)
-        with col_year: year_sel = st.number_input("Año", value=datetime.now().year, step=1)
-        with col_month:
-            mes_actual = datetime.now().month
-            month_sel = st.selectbox("Mes", range(1, 13), index=mes_actual-1, format_func=lambda x: nombre_mes_espanol(x))
+        df_visible = df if mostrar_historial else df[df["Fecha"] >= hoy]
+        st.caption(f"Eventos visibles: {len(df_visible)}")
+
+        tab_lista, tab_cal = st.tabs(["📋 Lista de Shows", "📅 Ver Calendario"])
         
-        st.markdown(f"<h3 style='text-align: center; color: #FFAB00;'>{nombre_mes_espanol(month_sel)} {year_sel}</h3>", unsafe_allow_html=True)
-        st.markdown(crear_html_calendario(year_sel, month_sel, fechas_conciertos), unsafe_allow_html=True)
-        st.caption("🔴 Rojo: Concierto | 🟡 Círculo: Hoy")
+        with tab_lista:
+            if df_visible.empty: st.info("🎉 ¡No hay fechas pendientes!")
+            else:
+                for index, row in df_visible.iterrows(): renderizar_tarjeta(row)
+
+        with tab_cal:
+            st.write("Selecciona un día rojo para ver detalles.")
+            col_year, col_month = st.columns(2)
+            with col_year: year_sel = st.number_input("Año", value=datetime.now().year, step=1)
+            with col_month:
+                mes_actual = datetime.now().month
+                month_sel = st.selectbox("Mes", range(1, 13), index=mes_actual-1, format_func=lambda x: nombre_mes_espanol(x))
+            
+            st.markdown(f"<h3 style='text-align: center; color: #FFAB00; text-shadow: 2px 2px 4px #000;'>{nombre_mes_espanol(month_sel)} {year_sel}</h3>", unsafe_allow_html=True)
+            st.markdown(crear_html_calendario(year_sel, month_sel, fechas_conciertos), unsafe_allow_html=True)
+            st.caption("🔴 Rojo: Concierto (Click para ver) | 🟡 Círculo: Hoy")
 
 else:
     st.error("No hay datos. Verifica el enlace CSV.")
