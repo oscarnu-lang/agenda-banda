@@ -4,53 +4,39 @@ from datetime import datetime
 import calendar
 import base64
 import os
-from PIL import Image # Importamos esto para manejar el logo como profesionales
 
-# --- 1. BLINDAJE DE RUTAS Y CARGA DE LOGO ---
-# Esto asegura que encuentre los archivos aunque Python esté mirando a otro lado
-try:
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-except:
-    current_dir = os.getcwd()
-
-# Definimos las rutas exactas
-logo_path_png = os.path.join(current_dir, "logo.png")
-logo_path_jpg = os.path.join(current_dir, "logo.jpg")
-fondo_path = os.path.join(current_dir, "fondo.jpg")
-
-# Lógica: Busca el logo y cárgalo en memoria
-icono_app = "🎸" # Por defecto
-try:
-    if os.path.exists(logo_path_png):
-        icono_app = Image.open(logo_path_png)
-    elif os.path.exists(logo_path_jpg):
-        icono_app = Image.open(logo_path_jpg)
-except Exception as e:
-    print(f"No se pudo cargar el logo: {e}")
-
-# --- CONFIGURACIÓN DE PÁGINA (Debe ser la primera orden de Streamlit) ---
-st.set_page_config(page_title="Agenda Banda Departamental", page_icon=icono_app, layout="centered")
+# --- 1. CONFIGURACIÓN INICIAL ---
+st.set_page_config(page_title="Agenda Banda Lavalleja", page_icon="🎸", layout="centered")
 
 # ¡¡¡ TU ENLACE CSV AQUÍ !!!
 SHEET_ID = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSIK5nAcesnNerJZXhriHGeVXzZ9rcWnMl4pZkQlaJ6Y_F_BLUB14VtveXaqHff3wFPnkgvf1L7qx_o/pub?output=csv"
 
-# --- 2. FUNCIONES ---
+# --- 2. FUNCIONES DE SISTEMA ---
 
 def get_base64_of_bin_file(bin_file):
     with open(bin_file, 'rb') as f: data = f.read()
     return base64.b64encode(data).decode()
 
-def set_png_as_page_bg(full_path_to_img):
+def set_png_as_page_bg(png_filename):
     try:
-        bin_str = get_base64_of_bin_file(full_path_to_img) 
-        st.markdown(f'''
-        <style>
-        .stApp {{
-            background-image: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.8)), url("data:image/jpg;base64,{bin_str}");
-            background-size: cover; background-position: center; background-repeat: no-repeat; background-attachment: fixed;
-        }}
-        </style>''', unsafe_allow_html=True)
-    except: st.markdown('<style>.stApp { background-color: #121212; }</style>', unsafe_allow_html=True)
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+    except:
+        current_dir = os.getcwd()
+    
+    for nombre in [png_filename, "Fondo.jpg", "fondo.png", "Fondo.png"]:
+        path = os.path.join(current_dir, nombre)
+        if os.path.exists(path):
+            try:
+                bin_str = get_base64_of_bin_file(path) 
+                st.markdown(f'''
+                <style>
+                .stApp {{
+                    background-image: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.95)), url("data:image/jpg;base64,{bin_str}");
+                    background-size: cover; background-position: center; background-repeat: no-repeat; background-attachment: fixed;
+                }}
+                </style>''', unsafe_allow_html=True)
+                return
+            except: pass
 
 @st.cache_data(ttl=60)
 def load_data():
@@ -106,47 +92,83 @@ def render_card(row):
         {'<div style="margin-top:10px; border-top:1px solid #444; padding-top:5px; font-size:0.9em; color:#ccc;">' + (f'🚐 Salida: <span class="highlight-time">{row["Salida"]}</span> &nbsp; ' if pd.notna(row.get("Salida")) else "") + (f'🎤 Prueba: <span class="highlight-time">{row["Prueba"]}</span>' if pd.notna(row.get("Prueba")) else "") + '</div>' if (pd.notna(row.get("Salida")) or pd.notna(row.get("Prueba"))) else ""}
     </div>""", unsafe_allow_html=True)
     
-    # Botones
     lk_map = row.get('Mapa')
     if pd.isna(lk_map) or not str(lk_map).startswith('http'): lk_map = None
-
     lk_rep = row.get('Repertorio')
     if pd.isna(lk_rep) or not str(lk_rep).startswith('http'): lk_rep = None
 
     if lk_map and lk_rep:
         c1, c2 = st.columns(2)
-        with c1: st.link_button("🗺️ Ver Ubicación", lk_map)
-        with c2: st.link_button("📄 Ver Repertorio", lk_rep)
-    elif lk_map: st.link_button("🗺️ Ver Ubicación", lk_map)
-    elif lk_rep: st.link_button("📄 Ver Repertorio", lk_rep)
+        with c1: st.link_button("📍 Ubicación", lk_map)
+        with c2: st.link_button("🎼 Repertorio", lk_rep)
+    elif lk_map: st.link_button("📍 Ubicación", lk_map)
+    elif lk_rep: st.link_button("🎼 Repertorio", lk_rep)
 
 
-# --- 3. ESTILOS Y EJECUCIÓN ---
+# --- 3. ESTILOS VISUALES (OPTIMIZADO PARA MÓVIL) ---
 
-# Aplicar Fondo (Usando la ruta segura)
-set_png_as_page_bg(fondo_path)
+set_png_as_page_bg("fondo.jpg")
 
-# Aplicar CSS
 st.markdown("""
 <style>
-    .stApp, h1, h2, h3, p, div { color: #E0E0E0; }
-    h1, h2, h3 { color: #FFFFFF !important; text-shadow: 2px 2px 4px #000; }
+    @import url('https://fonts.googleapis.com/css2?family=Lobster&family=Montserrat:wght@400;800&display=swap');
+
+    [data-testid="stSidebarNav"], [data-testid="stSidebar"], [data-testid="stToolbar"], 
+    [data-testid="stHeader"], [data-testid="stDecoration"], [data-testid="stFooter"], header, footer {display: none !important;}
     
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
+    .block-container { padding-top: 1.5rem !important; padding-bottom: 5rem !important; }
     
+    .stApp, h1, h2, h3, p, div { color: #E0E0E0; font-family: 'Montserrat', sans-serif; }
+    
+    /* CABECERA */
+    .titulo-contenedor { text-align: center; margin-bottom: 30px; }
+    .linea-superior { display: flex; justify-content: center; align-items: center; gap: 15px; margin-bottom: 10px; }
+    
+    /* ESTILOS BASE (PC) */
+    .iconos-header { font-size: 3.5rem; text-shadow: 0 0 15px rgba(255, 215, 0, 0.6); }
+    
+    .highlight-agenda {
+        font-family: 'Lobster', cursive; font-size: 6rem !important; font-weight: 400;
+        background: -webkit-linear-gradient(#FFF700, #FF4500); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        -webkit-text-stroke: 1.5px #FFD700; line-height: 1.0;
+        text-shadow: 0 0 15px rgba(255, 215, 0, 0.9), 0 0 30px rgba(255, 69, 0, 0.7), 5px 5px 8px #000000;
+        margin: 0; padding-top: 10px; transform: rotate(-2deg) scale(1.05); z-index: 10;
+    }
+
+    .subtitulo-banda {
+        font-family: 'Montserrat', sans-serif; font-size: 1.6rem !important; font-weight: 800;
+        text-transform: uppercase; letter-spacing: 1px; color: #FFFFFF; text-shadow: 3px 3px 6px #000000;
+        border-top: 3px solid #FF8C00; border-bottom: 3px solid #FF8C00; padding: 12px 0;
+        margin-top: 10px; display: inline-block; line-height: 1.3;
+    }
+
+    /* --- MEDIA QUERIES (AJUSTES PARA CELULAR) --- */
+    @media only screen and (max-width: 600px) {
+        /* Reducir tamaño del título en celular */
+        .highlight-agenda { font-size: 3.8rem !important; }
+        .iconos-header { font-size: 2.2rem !important; }
+        .subtitulo-banda { font-size: 1rem !important; padding: 8px 0; }
+        
+        /* Ajustar tarjetas para ganar espacio */
+        .date-box { min-width: 60px !important; padding: 5px !important; margin-right: 10px !important; }
+        .date-day { font-size: 1.8rem !important; }
+        .gig-venue { font-size: 1.2rem !important; }
+        
+        /* Ajustar márgenes generales */
+        .block-container { padding-left: 1rem !important; padding-right: 1rem !important; }
+    }
+
+    /* TARJETAS */
     .gig-card {
         background-color: rgba(20, 20, 20, 0.90); border-radius: 15px; padding: 20px;
-        margin-bottom: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.8);
-        border-left: 8px solid #555; backdrop-filter: blur(8px);
+        margin-bottom: 15px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.8); border-left: 8px solid #555; backdrop-filter: blur(8px);
     }
     .status-confirmado { border-left-color: #00C853 !important; }
     .status-pendiente { border-left-color: #FFAB00 !important; }
     .status-cancelado { border-left-color: #D50000 !important; }
     
     .gig-venue { font-size: 1.5em; font-weight: bold; color: #FFFFFF; }
-    
     .date-box { background-color: #2C2C2C; border-radius: 10px; text-align: center; padding: 8px 12px; min-width: 80px; border: 1px solid #444; }
     .date-week { font-size: 0.85em; color: #B0B0B0; font-weight: bold; text-transform: uppercase; margin-bottom: -5px; }
     .date-day { font-size: 2.2em; font-weight: 900; color: #FFF; line-height: 1.1; }
@@ -164,26 +186,48 @@ st.markdown("""
     .today-day { border: 2px solid #FFAB00; border-radius: 50%; display: inline-block; width: 35px; height: 35px; line-height: 31px; }
     .empty-day { background-color: transparent; }
 
+    /* BOTONES FANTASMA (WIRE) */
     div[data-testid="stLinkButton"] > a {
-        background-color: #FFAB00 !important; color: #000000 !important; border: none !important;
-        font-weight: 800 !important; text-transform: uppercase; letter-spacing: 0.5px;
-        border-radius: 8px !important; transition: all 0.3s ease; text-align: center;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.4);
+        background-color: transparent !important; border: 1px solid #FFAB00 !important; color: #FFAB00 !important;
+        font-weight: 600 !important; font-size: 0.8rem !important; text-transform: uppercase;
+        padding: 0.3rem 0rem !important; min-height: 0px !important; border-radius: 20px !important;
+        transition: all 0.3s ease; text-align: center; margin-top: -5px !important;
     }
     div[data-testid="stLinkButton"] > a:hover {
-        background-color: #FFD740 !important; color: #000 !important; transform: translateY(-2px); box-shadow: 0 6px 10px rgba(0,0,0,0.6);
+        background-color: #FFAB00 !important; color: #000 !important; border: 1px solid #FFAB00 !important;
+        box-shadow: 0 0 10px rgba(255, 171, 0, 0.5);
     }
 
-    .stTabs [data-baseweb="tab-list"] { gap: 10px; }
-    .stTabs [data-baseweb="tab"] { background-color: rgba(44, 44, 44, 0.9); border-radius: 5px; color: white; }
-    .stTabs [aria-selected="true"] { background-color: #FFAB00 !important; color: black !important; font-weight: bold; }
+    .stTabs [data-baseweb="tab-list"] { gap: 8px; margin-bottom: 20px; }
+    .stTabs [data-baseweb="tab"] { 
+        background-color: rgba(60, 60, 60, 0.8); border-radius: 8px; 
+        color: #E0E0E0; font-size: 1.1rem !important; font-weight: 600 !important;
+        padding: 10px 20px !important; border: 1px solid #444;
+    }
+    .stTabs [aria-selected="true"] { 
+        background-color: #FFAB00 !important; color: black !important; 
+        font-weight: 900 !important; box-shadow: 0 0 10px rgba(255, 171, 0, 0.5);
+        border: 1px solid #FFAB00;
+    }
 
 </style>
 """, unsafe_allow_html=True)
 
-# --- APP ---
-st.title("🎸 Agenda Banda Departamental")
+# --- 4. CABECERA ---
 
+st.markdown("""
+<div class="titulo-contenedor">
+<div class="linea-superior">
+<span class="iconos-header">🎸</span>
+<span class="highlight-agenda">Agenda</span>
+<span class="iconos-header">🎷</span>
+</div>
+<div class="subtitulo-banda">Banda Departamental de Lavalleja</div>
+</div>
+""", unsafe_allow_html=True)
+
+
+# --- LÓGICA DE DATOS ---
 df = load_data()
 fecha_url = st.query_params.get("fecha", None)
 
