@@ -105,7 +105,7 @@ def render_card(row):
     elif lk_rep: st.link_button("🎼 Repertorio", lk_rep)
 
 
-# --- 3. ESTILOS VISUALES (OPTIMIZADO PARA MÓVIL) ---
+# --- 3. ESTILOS VISUALES (CSS) ---
 
 set_png_as_page_bg("fondo.jpg")
 
@@ -113,10 +113,30 @@ st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Lobster&family=Montserrat:wght@400;800&display=swap');
 
-    [data-testid="stSidebarNav"], [data-testid="stSidebar"], [data-testid="stToolbar"], 
-    [data-testid="stHeader"], [data-testid="stDecoration"], [data-testid="stFooter"], header, footer {display: none !important;}
+    /* --- LIMPIEZA PROFUNDA DE INTERFAZ (ELIMINAR ICONOS STREAMLIT) --- */
     
-    .block-container { padding-top: 1.5rem !important; padding-bottom: 5rem !important; }
+    /* 1. Ocultar Menú de 3 puntos y Header */
+    #MainMenu {visibility: hidden;}
+    header {visibility: hidden;}
+    
+    /* 2. Ocultar la barra de herramientas superior (Deploy, etc) */
+    [data-testid="stToolbar"] {visibility: hidden !important;}
+    
+    /* 3. Ocultar la línea de colores de decoración */
+    [data-testid="stDecoration"] {display: none;}
+    
+    /* 4. Ocultar el pie de página "Made with Streamlit" */
+    footer {visibility: hidden;}
+    
+    /* 5. Ocultar el icono de estado "Running" (arriba a la derecha) */
+    [data-testid="stStatusWidget"] {visibility: hidden;}
+
+    /* 6. Subir el contenido para aprovechar el espacio vacío del header */
+    .block-container {
+        padding-top: 1rem !important; 
+        padding-bottom: 5rem !important;
+    }
+    /* ---------------------------------------------------------------- */
     
     .stApp, h1, h2, h3, p, div { color: #E0E0E0; font-family: 'Montserrat', sans-serif; }
     
@@ -124,7 +144,6 @@ st.markdown("""
     .titulo-contenedor { text-align: center; margin-bottom: 30px; }
     .linea-superior { display: flex; justify-content: center; align-items: center; gap: 15px; margin-bottom: 10px; }
     
-    /* ESTILOS BASE (PC) */
     .iconos-header { font-size: 3.5rem; text-shadow: 0 0 15px rgba(255, 215, 0, 0.6); }
     
     .highlight-agenda {
@@ -142,19 +161,14 @@ st.markdown("""
         margin-top: 10px; display: inline-block; line-height: 1.3;
     }
 
-    /* --- MEDIA QUERIES (AJUSTES PARA CELULAR) --- */
+    /* MEDIA QUERIES (CELULAR) */
     @media only screen and (max-width: 600px) {
-        /* Reducir tamaño del título en celular */
         .highlight-agenda { font-size: 3.8rem !important; }
         .iconos-header { font-size: 2.2rem !important; }
         .subtitulo-banda { font-size: 1rem !important; padding: 8px 0; }
-        
-        /* Ajustar tarjetas para ganar espacio */
         .date-box { min-width: 60px !important; padding: 5px !important; margin-right: 10px !important; }
         .date-day { font-size: 1.8rem !important; }
         .gig-venue { font-size: 1.2rem !important; }
-        
-        /* Ajustar márgenes generales */
         .block-container { padding-left: 1rem !important; padding-right: 1rem !important; }
     }
 
