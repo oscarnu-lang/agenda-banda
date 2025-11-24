@@ -141,7 +141,7 @@ def render_card(row):
     elif lk_rep: st.link_button("🎼 Repertorio", lk_rep)
 
 
-# --- 3. ESTILOS VISUALES (CSS "NUCLEAR" PARA ELIMINAR MARCAS) ---
+# --- 3. ESTILOS VISUALES (CSS BLINDADO) ---
 
 set_png_as_page_bg("fondo.jpg")
 
@@ -149,39 +149,49 @@ st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Lobster&family=Montserrat:wght@400;800&display=swap');
 
-    /* --- OPCIÓN NUCLEAR: ELIMINAR TODO RASTRO DE STREAMLIT --- */
+    /* ============================================================
+       BLOQUEO TOTAL DE MARCAS (FOOTER Y HEADER) - NIVEL NUCLEAR
+       ============================================================ */
     
-    /* Ocultar Menú Hamburguesa y Header */
-    #MainMenu {visibility: hidden !important; display: none !important;}
-    header {visibility: hidden !important; display: none !important;}
-    
-    /* Ocultar Toolbar Superior */
-    [data-testid="stToolbar"] {visibility: hidden !important; display: none !important;}
-    
-    /* Ocultar Decoración de colores */
-    [data-testid="stDecoration"] {visibility: hidden !important; display: none !important;}
-    
-    /* Ocultar Footer (Made with Streamlit) - ATAQUE TRIPLE */
-    footer {visibility: hidden !important; display: none !important; height: 0px !important;}
-    [data-testid="stFooter"] {visibility: hidden !important; display: none !important;}
-    .stApp > footer {display: none !important;}
-    
-    /* Ocultar Status Widget (Running...) */
-    [data-testid="stStatusWidget"] {visibility: hidden !important; display: none !important;}
+    /* 1. Ocultar Header superior vacío */
+    header[data-testid="stHeader"] {
+        display: none !important;
+        visibility: hidden !important;
+    }
 
-    /* Reajustar márgenes para ocupar todo el espacio liberado */
+    /* 2. Ocultar Footer "Made with Streamlit" (Todos los selectores posibles) */
+    footer {display: none !important; visibility: hidden !important;}
+    #MainMenu {display: none !important; visibility: hidden !important;}
+    [data-testid="stFooter"] {display: none !important; visibility: hidden !important;}
+    .stApp > footer {display: none !important; visibility: hidden !important;}
+    
+    /* Truco extra: Forzar altura 0 por si acaso */
+    footer, [data-testid="stFooter"] {
+        height: 0px !important;
+        margin: 0px !important;
+        padding: 0px !important;
+        opacity: 0 !important;
+    }
+
+    /* 3. Ocultar Toolbar de opciones */
+    [data-testid="stToolbar"] {display: none !important; visibility: hidden !important;}
+    [data-testid="stStatusWidget"] {display: none !important;}
+    [data-testid="stDecoration"] {display: none !important;}
+
+    /* 4. Ajustar márgenes del contenedor principal */
     .block-container {
-        padding-top: 1rem !important; 
-        padding-bottom: 2rem !important; /* Menos espacio abajo ya que no hay footer */
+        padding-top: 1rem !important;
+        padding-bottom: 1rem !important; /* Quitar espacio extra abajo */
     }
     
-    /* ------------------------------------------------------- */
+    /* ============================================================ */
     
     .stApp, h1, h2, h3, p, div { color: #E0E0E0; font-family: 'Montserrat', sans-serif; }
     
     /* CABECERA */
     .titulo-contenedor { text-align: center; margin-bottom: 20px; margin-top: 0px; }
     .linea-superior { display: flex; justify-content: center; align-items: center; gap: 15px; margin-bottom: 5px; }
+    
     .iconos-header { font-size: 3.5rem; text-shadow: 0 0 15px rgba(255, 215, 0, 0.6); }
     
     .highlight-agenda {
@@ -191,6 +201,7 @@ st.markdown("""
         text-shadow: 0 0 15px rgba(255, 215, 0, 0.9), 0 0 30px rgba(255, 69, 0, 0.7), 5px 5px 8px #000000;
         margin: 0; padding-top: 10px; transform: rotate(-2deg) scale(1.05); z-index: 10;
     }
+
     .subtitulo-banda {
         font-family: 'Montserrat', sans-serif; font-size: 1.6rem !important; font-weight: 800;
         text-transform: uppercase; letter-spacing: 1px; color: #FFFFFF; text-shadow: 3px 3px 6px #000000;
@@ -250,6 +261,7 @@ st.markdown("""
     .today-day { border: 2px solid #FFAB00; border-radius: 50%; display: inline-block; width: 35px; height: 35px; line-height: 31px; }
     .empty-day { background-color: transparent; }
 
+    /* BOTONES FANTASMA */
     div[data-testid="stLinkButton"] > a {
         background-color: transparent !important; border: 1px solid #FFAB00 !important; color: #FFAB00 !important;
         font-weight: 600 !important; font-size: 0.8rem !important; text-transform: uppercase;
@@ -281,6 +293,7 @@ st.markdown("""
 df = load_data()
 fecha_url = st.query_params.get("fecha", None)
 
+# --- MODO DETALLE ---
 if not df.empty and fecha_url:
     df["Fecha"] = pd.to_datetime(df["Fecha"], errors='coerce', dayfirst=True)
     df = df.dropna(subset=['Fecha']).sort_values(by="Fecha")
@@ -305,6 +318,7 @@ if not df.empty and fecha_url:
         else: st.warning("Sin datos para esta fecha.")
     except: st.error("Error en la fecha seleccionada.")
 
+# --- MODO PRINCIPAL ---
 elif not df.empty:
     df["Fecha"] = pd.to_datetime(df["Fecha"], errors='coerce', dayfirst=True)
     df = df.dropna(subset=['Fecha']).sort_values(by="Fecha")
@@ -331,10 +345,11 @@ elif not df.empty:
             html_print = generar_html_para_imprimir(vis_print)
             st.download_button("🖨️ Imprimir Lista", html_print, file_name="agenda.html", mime="text/html")
 
-    # Filtro visual principal
+    # Filtro visual
     vis = df if hist else df[df["Fecha"] >= hoy]
     st.caption(f"Próximos eventos: {len(vis)}")
     
+    # --- PESTAÑAS ---
     t1, t2 = st.tabs(["📋 Lista de Shows", "📅 Ver Calendario"])
     
     with t1:
