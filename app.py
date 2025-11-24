@@ -141,7 +141,7 @@ def render_card(row):
     elif lk_rep: st.link_button("🎼 Repertorio", lk_rep)
 
 
-# --- 3. ESTILOS VISUALES ---
+# --- 3. ESTILOS VISUALES (CSS "NUCLEAR" PARA ELIMINAR MARCAS) ---
 
 set_png_as_page_bg("fondo.jpg")
 
@@ -149,10 +149,33 @@ st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Lobster&family=Montserrat:wght@400;800&display=swap');
 
-    /* LIMPIEZA */
-    [data-testid="stSidebarNav"], [data-testid="stSidebar"], [data-testid="stToolbar"], 
-    [data-testid="stHeader"], [data-testid="stDecoration"], [data-testid="stFooter"], header, footer {display: none !important;}
-    .block-container { padding-top: 1rem !important; padding-bottom: 5rem !important; }
+    /* --- OPCIÓN NUCLEAR: ELIMINAR TODO RASTRO DE STREAMLIT --- */
+    
+    /* Ocultar Menú Hamburguesa y Header */
+    #MainMenu {visibility: hidden !important; display: none !important;}
+    header {visibility: hidden !important; display: none !important;}
+    
+    /* Ocultar Toolbar Superior */
+    [data-testid="stToolbar"] {visibility: hidden !important; display: none !important;}
+    
+    /* Ocultar Decoración de colores */
+    [data-testid="stDecoration"] {visibility: hidden !important; display: none !important;}
+    
+    /* Ocultar Footer (Made with Streamlit) - ATAQUE TRIPLE */
+    footer {visibility: hidden !important; display: none !important; height: 0px !important;}
+    [data-testid="stFooter"] {visibility: hidden !important; display: none !important;}
+    .stApp > footer {display: none !important;}
+    
+    /* Ocultar Status Widget (Running...) */
+    [data-testid="stStatusWidget"] {visibility: hidden !important; display: none !important;}
+
+    /* Reajustar márgenes para ocupar todo el espacio liberado */
+    .block-container {
+        padding-top: 1rem !important; 
+        padding-bottom: 2rem !important; /* Menos espacio abajo ya que no hay footer */
+    }
+    
+    /* ------------------------------------------------------- */
     
     .stApp, h1, h2, h3, p, div { color: #E0E0E0; font-family: 'Montserrat', sans-serif; }
     
@@ -160,6 +183,7 @@ st.markdown("""
     .titulo-contenedor { text-align: center; margin-bottom: 20px; margin-top: 0px; }
     .linea-superior { display: flex; justify-content: center; align-items: center; gap: 15px; margin-bottom: 5px; }
     .iconos-header { font-size: 3.5rem; text-shadow: 0 0 15px rgba(255, 215, 0, 0.6); }
+    
     .highlight-agenda {
         font-family: 'Lobster', cursive; font-size: 6rem !important; font-weight: 400;
         background: -webkit-linear-gradient(#FFF700, #FF4500); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
@@ -174,7 +198,7 @@ st.markdown("""
         margin-top: 10px; display: inline-block; line-height: 1.3;
     }
 
-    /* ESTILOS DEL EXPANDER (Menú de Gestión) */
+    /* ESTILOS DEL EXPANDER */
     .streamlit-expanderHeader {
         background-color: rgba(30, 30, 30, 0.6) !important;
         border: 1px solid #444 !important;
@@ -199,7 +223,7 @@ st.markdown("""
         .block-container { padding-left: 1rem !important; padding-right: 1rem !important; }
     }
 
-    /* TARJETAS Y BOTONES */
+    /* TARJETAS */
     .gig-card {
         background-color: rgba(20, 20, 20, 0.90); border-radius: 15px; padding: 20px;
         margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.8); border-left: 8px solid #555; backdrop-filter: blur(8px);
@@ -257,7 +281,6 @@ st.markdown("""
 df = load_data()
 fecha_url = st.query_params.get("fecha", None)
 
-# --- MODO DETALLE (NO MUESTRA TOOLBAR) ---
 if not df.empty and fecha_url:
     df["Fecha"] = pd.to_datetime(df["Fecha"], errors='coerce', dayfirst=True)
     df = df.dropna(subset=['Fecha']).sort_values(by="Fecha")
@@ -282,7 +305,6 @@ if not df.empty and fecha_url:
         else: st.warning("Sin datos para esta fecha.")
     except: st.error("Error en la fecha seleccionada.")
 
-# --- MODO PRINCIPAL (CON MENU OCULTO) ---
 elif not df.empty:
     df["Fecha"] = pd.to_datetime(df["Fecha"], errors='coerce', dayfirst=True)
     df = df.dropna(subset=['Fecha']).sort_values(by="Fecha")
@@ -305,7 +327,6 @@ elif not df.empty:
         with c2:
             if st.button("🔄 Actualizar Datos", help="Recargar Excel"): st.cache_data.clear()
         with c3:
-            # Filtro previo para imprimir
             vis_print = df if hist else df[df["Fecha"] >= hoy]
             html_print = generar_html_para_imprimir(vis_print)
             st.download_button("🖨️ Imprimir Lista", html_print, file_name="agenda.html", mime="text/html")
@@ -314,7 +335,6 @@ elif not df.empty:
     vis = df if hist else df[df["Fecha"] >= hoy]
     st.caption(f"Próximos eventos: {len(vis)}")
     
-    # --- PESTAÑAS ---
     t1, t2 = st.tabs(["📋 Lista de Shows", "📅 Ver Calendario"])
     
     with t1:
