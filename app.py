@@ -50,9 +50,7 @@ def traducir_mes(f): return {"Jan":"ENE","Feb":"FEB","Mar":"MAR","Apr":"ABR","Ma
 def traducir_dia(f): return {0:"LUN",1:"MAR",2:"MIÉ",3:"JUE",4:"VIE",5:"SÁB",6:"DOM"}[f.weekday()]
 def mes_esp(n): return ["","Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"][n]
 
-# --- FUNCIÓN NUEVA: GENERAR HTML PARA IMPRIMIR ---
 def generar_html_para_imprimir(dataframe):
-    # Plantilla HTML simple y limpia (Fondo blanco, letras negras)
     html = """
     <html>
     <head>
@@ -71,59 +69,22 @@ def generar_html_para_imprimir(dataframe):
     </head>
     <body>
         <h1>🎸 Banda Departamental de Lavalleja</h1>
-        <div class="fecha-impresion">Reporte de Conciertos generado el: """ + datetime.now().strftime("%d/%m/%Y") + """</div>
-        
+        <div class="fecha-impresion">Reporte generado: """ + datetime.now().strftime("%d/%m/%Y") + """</div>
         <table>
             <thead>
-                <tr>
-                    <th>FECHA</th>
-                    <th>HORA</th>
-                    <th>LUGAR</th>
-                    <th>CIUDAD</th>
-                    <th>LOGÍSTICA</th>
-                    <th>ESTADO</th>
-                </tr>
+                <tr><th>FECHA</th><th>HORA</th><th>LUGAR</th><th>CIUDAD</th><th>LOGÍSTICA</th><th>ESTADO</th></tr>
             </thead>
             <tbody>
     """
-    
-    # Rellenar la tabla con los datos
     for index, row in dataframe.iterrows():
-        # Formatear fecha bonita
         fecha_str = f"{row['Fecha'].day}/{row['Fecha'].month}/{row['Fecha'].year} ({traducir_dia(row['Fecha'])})"
-        
-        # Datos opcionales
         logistica = ""
         if pd.notna(row.get('Salida')): logistica += f"Salida: {row['Salida']} <br>"
         if pd.notna(row.get('Prueba')): logistica += f"Prueba: {row['Prueba']}"
-        
-        # Color estado
         est = row.get('Estado', 'Pendiente')
         clase_estado = "status-ok" if est == "Confirmado" else "status-bad" if est == "Cancelado" else "status-warn"
-        
-        html += f"""
-            <tr>
-                <td>{fecha_str}</td>
-                <td>{row['Hora']} hs</td>
-                <td><strong>{row['Lugar']}</strong></td>
-                <td>{row.get('Ciudad', '')}</td>
-                <td><small>{logistica}</small></td>
-                <td><span class="{clase_estado}">{est}</span></td>
-            </tr>
-        """
-        
-    html += """
-            </tbody>
-        </table>
-        <br><br>
-        <div style="text-align: center; font-size: 0.8em; color: #999;">Documento de uso interno</div>
-        
-        <script>
-            window.onload = function() { window.print(); }
-        </script>
-    </body>
-    </html>
-    """
+        html += f"""<tr><td>{fecha_str}</td><td>{row['Hora']} hs</td><td><strong>{row['Lugar']}</strong></td><td>{row.get('Ciudad', '')}</td><td><small>{logistica}</small></td><td><span class="{clase_estado}">{est}</span></td></tr>"""
+    html += """</tbody></table><script>window.onload = function() { window.print(); }</script></body></html>"""
     return html
 
 def crear_calendario(y, m, dias):
@@ -150,7 +111,6 @@ def crear_calendario(y, m, dias):
 def render_card(row):
     est = row.get('Estado', 'Pendiente')
     col_est, emo = ("status-confirmado", "✅") if est == "Confirmado" else ("status-cancelado", "❌") if est == "Cancelado" else ("status-pendiente", "⚠️")
-    
     st.markdown(f"""
     <div class="gig-card {col_est}">
         <div style="display: flex; align-items: center;">
@@ -181,7 +141,7 @@ def render_card(row):
     elif lk_rep: st.link_button("🎼 Repertorio", lk_rep)
 
 
-# --- 3. ESTILOS VISUALES (CSS) ---
+# --- 3. ESTILOS VISUALES ---
 
 set_png_as_page_bg("fondo.jpg")
 
@@ -192,13 +152,13 @@ st.markdown("""
     /* LIMPIEZA DE INTERFAZ */
     [data-testid="stSidebarNav"], [data-testid="stSidebar"], [data-testid="stToolbar"], 
     [data-testid="stHeader"], [data-testid="stDecoration"], [data-testid="stFooter"], header, footer {display: none !important;}
-    .block-container { padding-top: 1.5rem !important; padding-bottom: 5rem !important; }
+    .block-container { padding-top: 1rem !important; padding-bottom: 5rem !important; }
     
     .stApp, h1, h2, h3, p, div { color: #E0E0E0; font-family: 'Montserrat', sans-serif; }
     
     /* CABECERA */
-    .titulo-contenedor { text-align: center; margin-bottom: 30px; }
-    .linea-superior { display: flex; justify-content: center; align-items: center; gap: 15px; margin-bottom: 10px; }
+    .titulo-contenedor { text-align: center; margin-bottom: 15px; margin-top: 0px; }
+    .linea-superior { display: flex; justify-content: center; align-items: center; gap: 15px; margin-bottom: 5px; }
     
     .iconos-header { font-size: 3.5rem; text-shadow: 0 0 15px rgba(255, 215, 0, 0.6); }
     
@@ -217,7 +177,6 @@ st.markdown("""
         margin-top: 10px; display: inline-block; line-height: 1.3;
     }
 
-    /* MEDIA QUERIES (CELULAR) */
     @media only screen and (max-width: 600px) {
         .highlight-agenda { font-size: 3.8rem !important; }
         .iconos-header { font-size: 2.2rem !important; }
@@ -283,82 +242,86 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- 4. CABECERA ---
+# --- 4. LÓGICA DE EJECUCIÓN ---
 
-st.markdown("""
-<div class="titulo-contenedor">
-<div class="linea-superior">
-<span class="iconos-header">🎸</span>
-<span class="highlight-agenda">Agenda</span>
-<span class="iconos-header">🎷</span>
-</div>
-<div class="subtitulo-banda">Banda Departamental de Lavalleja</div>
-</div>
-""", unsafe_allow_html=True)
-
-
-# --- LÓGICA DE DATOS ---
 df = load_data()
 fecha_url = st.query_params.get("fecha", None)
 
-if not df.empty:
+# --- MODO DETALLE (NO MUESTRA TOOLBAR) ---
+if not df.empty and fecha_url:
+    df["Fecha"] = pd.to_datetime(df["Fecha"], errors='coerce', dayfirst=True)
+    df = df.dropna(subset=['Fecha']).sort_values(by="Fecha")
+    
+    st.markdown("""
+    <div class="titulo-contenedor">
+    <div class="linea-superior"><span class="iconos-header">🎸</span><span class="highlight-agenda">Agenda</span><span class="iconos-header">🎷</span></div>
+    <div class="subtitulo-banda">Banda Departamental de Lavalleja</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    if st.button("⬅️ VOLVER A LA AGENDA", type="primary"): 
+        st.query_params.clear()
+        st.rerun()
+    st.divider()
+    try:
+        f_dt = pd.to_datetime(fecha_url)
+        sub = df[df["Fecha"] == f_dt]
+        if not sub.empty:
+            st.write(f"📅 Detalle del día: {f_dt.strftime('%d/%m/%Y')}")
+            for i, r in sub.iterrows(): render_card(r)
+        else: st.warning("Sin datos para esta fecha.")
+    except: st.error("Error en la fecha seleccionada.")
+
+# --- MODO PRINCIPAL (CON TOOLBAR CENTRAL) ---
+elif not df.empty:
     df["Fecha"] = pd.to_datetime(df["Fecha"], errors='coerce', dayfirst=True)
     df = df.dropna(subset=['Fecha']).sort_values(by="Fecha")
     dias_shows = df["Fecha"].dt.strftime('%Y-%m-%d').unique().tolist()
     hoy = pd.Timestamp.now().normalize()
 
-    if fecha_url:
-        if st.button("⬅️ VOLVER A LA AGENDA", type="primary"): 
-            st.query_params.clear()
-            st.rerun()
-        st.divider()
-        try:
-            f_dt = pd.to_datetime(fecha_url)
-            sub = df[df["Fecha"] == f_dt]
-            if not sub.empty:
-                st.write(f"📅 Detalle del día: {f_dt.strftime('%d/%m/%Y')}")
-                for i, r in sub.iterrows(): render_card(r)
-            else: st.warning("Sin datos para esta fecha.")
-        except: st.error("Error en la fecha seleccionada.")
-    else:
-        # --- BARRA DE HERRAMIENTAS SUPERIOR ---
-        c_sw, c_bt, c_dl = st.columns([2,1,1])
-        
-        with c_sw: 
-            hist = st.toggle("Ver historial", value=False)
-        with c_bt: 
-            if st.button("🔄", help="Actualizar"): st.cache_data.clear()
-        
-        # Filtro de datos
-        vis = df if hist else df[df["Fecha"] >= hoy]
-        
-        # BOTÓN DE DESCARGA (IMPRIMIR)
-        with c_dl:
-            # Generamos el HTML al vuelo
-            html_data = generar_html_para_imprimir(vis)
-            st.download_button(
-                label="🖨️",
-                data=html_data,
-                file_name="agenda_banda.html",
-                mime="text/html",
-                help="Descargar lista para imprimir"
-            )
+    # 1. TÍTULO (ARRIBA DEL TODO)
+    st.markdown("""
+    <div class="titulo-contenedor">
+    <div class="linea-superior"><span class="iconos-header">🎸</span><span class="highlight-agenda">Agenda</span><span class="iconos-header">🎷</span></div>
+    <div class="subtitulo-banda">Banda Departamental de Lavalleja</div>
+    </div>
+    """, unsafe_allow_html=True)
 
-        st.caption(f"Eventos visibles: {len(vis)}")
-        
-        t1, t2 = st.tabs(["📋 Lista de Shows", "📅 Ver Calendario"])
-        
-        with t1:
-            if vis.empty: st.info("🎉 ¡No hay fechas pendientes!")
-            else: 
-                for i, r in vis.iterrows(): render_card(r)
-        with t2:
-            st.write("Selecciona un día rojo para ver detalles.")
-            cy, cm = st.columns(2)
-            with cy: ys = st.number_input("Año", value=datetime.now().year, step=1)
-            with cm: ms = st.selectbox("Mes", range(1, 13), index=datetime.now().month-1, format_func=mes_esp)
-            st.markdown(f"<h3 style='text-align: center; color: #FFAB00; text-shadow: 2px 2px 4px #000;'>{mes_esp(ms)} {ys}</h3>", unsafe_allow_html=True)
-            st.markdown(crear_calendario(ys, ms, dias_shows), unsafe_allow_html=True)
-            st.caption("🔴 Rojo: Concierto | 🟡 Círculo: Hoy")
+    # 2. BARRA DE CONTROL (CENTRADA DEBAJO DEL TÍTULO)
+    # Usamos 3 columnas centradas: [Espacio | CONTROLES | Espacio]
+    col_izq, col_controles, col_der = st.columns([1, 3, 1])
+    
+    with col_controles:
+        # Dentro de la columna central, ponemos los 3 botones juntos
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            hist = st.toggle("Historial", value=False)
+        with c2:
+            if st.button("🔄", help="Actualizar"): st.cache_data.clear()
+        with c3:
+            # Filtro previo para imprimir lo correcto
+            vis = df if hist else df[df["Fecha"] >= hoy]
+            html_print = generar_html_para_imprimir(vis)
+            st.download_button("🖨️", html_print, file_name="agenda.html", mime="text/html")
+
+    # Filtro visual final
+    vis = df if hist else df[df["Fecha"] >= hoy]
+    st.caption(f"Eventos visibles: {len(vis)}")
+    
+    # --- PESTAÑAS ---
+    t1, t2 = st.tabs(["📋 Lista de Shows", "📅 Ver Calendario"])
+    
+    with t1:
+        if vis.empty: st.info("🎉 ¡No hay fechas pendientes!")
+        else: 
+            for i, r in vis.iterrows(): render_card(r)
+    with t2:
+        st.write("Selecciona un día rojo para ver detalles.")
+        cy, cm = st.columns(2)
+        with cy: ys = st.number_input("Año", value=datetime.now().year, step=1)
+        with cm: ms = st.selectbox("Mes", range(1, 13), index=datetime.now().month-1, format_func=mes_esp)
+        st.markdown(f"<h3 style='text-align: center; color: #FFAB00; text-shadow: 2px 2px 4px #000;'>{mes_esp(ms)} {ys}</h3>", unsafe_allow_html=True)
+        st.markdown(crear_calendario(ys, ms, dias_shows), unsafe_allow_html=True)
+        st.caption("🔴 Rojo: Concierto | 🟡 Círculo: Hoy")
 
 else: st.error("No hay datos. Verifica el enlace CSV.")
