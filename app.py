@@ -141,59 +141,37 @@ def render_card(row):
     elif lk_rep: st.link_button("🎼 Repertorio", lk_rep)
 
 
-# --- 3. ESTILOS VISUALES (CSS BLINDADO) ---
+# --- 3. ESTILOS Y SCRIPTS "ANTIMARCAS" ---
 
 set_png_as_page_bg("fondo.jpg")
 
+# ESTO COMBINA CSS Y JAVASCRIPT PARA BORRAR TODO
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Lobster&family=Montserrat:wght@400;800&display=swap');
 
-    /* ============================================================
-       BLOQUEO TOTAL DE MARCAS (FOOTER Y HEADER) - NIVEL NUCLEAR
-       ============================================================ */
-    
-    /* 1. Ocultar Header superior vacío */
-    header[data-testid="stHeader"] {
+    /* Ocultar elementos por CSS */
+    header, footer, [data-testid="stHeader"], [data-testid="stFooter"], [data-testid="stToolbar"], [data-testid="stDecoration"] {
         display: none !important;
         visibility: hidden !important;
-    }
-
-    /* 2. Ocultar Footer "Made with Streamlit" (Todos los selectores posibles) */
-    footer {display: none !important; visibility: hidden !important;}
-    #MainMenu {display: none !important; visibility: hidden !important;}
-    [data-testid="stFooter"] {display: none !important; visibility: hidden !important;}
-    .stApp > footer {display: none !important; visibility: hidden !important;}
-    
-    /* Truco extra: Forzar altura 0 por si acaso */
-    footer, [data-testid="stFooter"] {
         height: 0px !important;
-        margin: 0px !important;
-        padding: 0px !important;
         opacity: 0 !important;
-    }
-
-    /* 3. Ocultar Toolbar de opciones */
-    [data-testid="stToolbar"] {display: none !important; visibility: hidden !important;}
-    [data-testid="stStatusWidget"] {display: none !important;}
-    [data-testid="stDecoration"] {display: none !important;}
-
-    /* 4. Ajustar márgenes del contenedor principal */
-    .block-container {
-        padding-top: 1rem !important;
-        padding-bottom: 1rem !important; /* Quitar espacio extra abajo */
+        pointer-events: none !important;
     }
     
-    /* ============================================================ */
+    #MainMenu {display: none !important;}
     
+    /* Ajustar contenedores para que no quede espacio vacío arriba */
+    .block-container { padding-top: 0rem !important; padding-bottom: 3rem !important; }
+    .stApp { margin-top: -50px !important; } /* Forzar subida */
+
+    /* ESTILOS DE LA APP */
     .stApp, h1, h2, h3, p, div { color: #E0E0E0; font-family: 'Montserrat', sans-serif; }
     
-    /* CABECERA */
-    .titulo-contenedor { text-align: center; margin-bottom: 20px; margin-top: 0px; }
+    /* ... (Resto de tus estilos de siempre) ... */
+    .titulo-contenedor { text-align: center; margin-bottom: 20px; margin-top: 60px; } /* Margen top para compensar subida */
     .linea-superior { display: flex; justify-content: center; align-items: center; gap: 15px; margin-bottom: 5px; }
-    
     .iconos-header { font-size: 3.5rem; text-shadow: 0 0 15px rgba(255, 215, 0, 0.6); }
-    
     .highlight-agenda {
         font-family: 'Lobster', cursive; font-size: 6rem !important; font-weight: 400;
         background: -webkit-linear-gradient(#FFF700, #FF4500); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
@@ -201,28 +179,16 @@ st.markdown("""
         text-shadow: 0 0 15px rgba(255, 215, 0, 0.9), 0 0 30px rgba(255, 69, 0, 0.7), 5px 5px 8px #000000;
         margin: 0; padding-top: 10px; transform: rotate(-2deg) scale(1.05); z-index: 10;
     }
-
     .subtitulo-banda {
         font-family: 'Montserrat', sans-serif; font-size: 1.6rem !important; font-weight: 800;
         text-transform: uppercase; letter-spacing: 1px; color: #FFFFFF; text-shadow: 3px 3px 6px #000000;
         border-top: 3px solid #FF8C00; border-bottom: 3px solid #FF8C00; padding: 12px 0;
         margin-top: 10px; display: inline-block; line-height: 1.3;
     }
-
-    /* ESTILOS DEL EXPANDER */
-    .streamlit-expanderHeader {
-        background-color: rgba(30, 30, 30, 0.6) !important;
-        border: 1px solid #444 !important;
-        border-radius: 8px !important;
-        color: #bbb !important;
-        font-size: 0.9rem !important;
-    }
-    .streamlit-expanderContent {
-        background-color: rgba(20, 20, 20, 0.8) !important;
-        border-radius: 0 0 8px 8px !important;
-        border: 1px solid #444 !important;
-        border-top: none !important;
-    }
+    
+    /* Estilos Expander */
+    .streamlit-expanderHeader { background-color: rgba(30, 30, 30, 0.6) !important; border: 1px solid #444 !important; border-radius: 8px !important; color: #bbb !important; font-size: 0.9rem !important; }
+    .streamlit-expanderContent { background-color: rgba(20, 20, 20, 0.8) !important; border-radius: 0 0 8px 8px !important; border: 1px solid #444 !important; border-top: none !important; }
 
     @media only screen and (max-width: 600px) {
         .highlight-agenda { font-size: 3.8rem !important; }
@@ -231,61 +197,62 @@ st.markdown("""
         .date-box { min-width: 60px !important; padding: 5px !important; margin-right: 10px !important; }
         .date-day { font-size: 1.8rem !important; }
         .gig-venue { font-size: 1.2rem !important; }
-        .block-container { padding-left: 1rem !important; padding-right: 1rem !important; }
     }
 
-    /* TARJETAS */
-    .gig-card {
-        background-color: rgba(20, 20, 20, 0.90); border-radius: 15px; padding: 20px;
-        margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.8); border-left: 8px solid #555; backdrop-filter: blur(8px);
-    }
+    .gig-card { background-color: rgba(20, 20, 20, 0.90); border-radius: 15px; padding: 20px; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.8); border-left: 8px solid #555; backdrop-filter: blur(8px); }
     .status-confirmado { border-left-color: #00C853 !important; }
     .status-pendiente { border-left-color: #FFAB00 !important; }
     .status-cancelado { border-left-color: #D50000 !important; }
-    
     .gig-venue { font-size: 1.5em; font-weight: bold; color: #FFFFFF; }
     .date-box { background-color: #2C2C2C; border-radius: 10px; text-align: center; padding: 8px 12px; min-width: 80px; border: 1px solid #444; }
     .date-week { font-size: 0.85em; color: #B0B0B0; font-weight: bold; text-transform: uppercase; margin-bottom: -5px; }
     .date-day { font-size: 2.2em; font-weight: 900; color: #FFF; line-height: 1.1; }
     .date-month { color: #FFAB00; font-weight: bold; text-transform: uppercase; font-size: 0.8em; }
     .highlight-time { color: #4FC3F7; font-weight: bold; }
-
     .calendar-container { background-color: rgba(30, 30, 30, 0.9); padding: 20px; border-radius: 15px; text-align: center; backdrop-filter: blur(5px); }
     table.calendar-table { width: 100%; border-collapse: collapse; color: #FFF; font-family: sans-serif; }
     th { color: #FFAB00; padding: 10px; text-transform: uppercase; font-size: 0.8em; }
     td { padding: 15px; text-align: center; border: 1px solid #333; width: 14%; height: 60px; vertical-align: middle; }
-    
     a.gig-link { text-decoration: none; display: inline-block; width: 100%; height: 100%; }
     .gig-day { background-color: #D50000; color: white; font-weight: bold; border-radius: 50%; display: inline-block; width: 35px; height: 35px; line-height: 35px; transition: transform 0.2s; cursor: pointer; }
     .gig-day:hover { transform: scale(1.2); box-shadow: 0 0 15px rgba(255, 0, 0, 0.8); }
     .today-day { border: 2px solid #FFAB00; border-radius: 50%; display: inline-block; width: 35px; height: 35px; line-height: 31px; }
     .empty-day { background-color: transparent; }
-
-    /* BOTONES FANTASMA */
-    div[data-testid="stLinkButton"] > a {
-        background-color: transparent !important; border: 1px solid #FFAB00 !important; color: #FFAB00 !important;
-        font-weight: 600 !important; font-size: 0.8rem !important; text-transform: uppercase;
-        padding: 0.3rem 0rem !important; min-height: 0px !important; border-radius: 20px !important;
-        transition: all 0.3s ease; text-align: center; margin-top: -5px !important;
-    }
-    div[data-testid="stLinkButton"] > a:hover {
-        background-color: #FFAB00 !important; color: #000 !important; border: 1px solid #FFAB00 !important;
-        box-shadow: 0 0 10px rgba(255, 171, 0, 0.5);
-    }
-
+    div[data-testid="stLinkButton"] > a { background-color: transparent !important; border: 1px solid #FFAB00 !important; color: #FFAB00 !important; font-weight: 600 !important; font-size: 0.8rem !important; text-transform: uppercase; padding: 0.3rem 0rem !important; min-height: 0px !important; border-radius: 20px !important; transition: all 0.3s ease; text-align: center; margin-top: -5px !important; }
+    div[data-testid="stLinkButton"] > a:hover { background-color: #FFAB00 !important; color: #000 !important; border: 1px solid #FFAB00 !important; box-shadow: 0 0 10px rgba(255, 171, 0, 0.5); }
     .stTabs [data-baseweb="tab-list"] { gap: 8px; margin-bottom: 20px; }
-    .stTabs [data-baseweb="tab"] { 
-        background-color: rgba(60, 60, 60, 0.8); border-radius: 8px; 
-        color: #E0E0E0; font-size: 1.1rem !important; font-weight: 600 !important;
-        padding: 10px 20px !important; border: 1px solid #444;
-    }
-    .stTabs [aria-selected="true"] { 
-        background-color: #FFAB00 !important; color: black !important; 
-        font-weight: 900 !important; box-shadow: 0 0 10px rgba(255, 171, 0, 0.5);
-        border: 1px solid #FFAB00;
-    }
-
+    .stTabs [data-baseweb="tab"] { background-color: rgba(60, 60, 60, 0.8); border-radius: 8px; color: #E0E0E0; font-size: 1.1rem !important; font-weight: 600 !important; padding: 10px 20px !important; border: 1px solid #444; }
+    .stTabs [aria-selected="true"] { background-color: #FFAB00 !important; color: black !important; font-weight: 900 !important; box-shadow: 0 0 10px rgba(255, 171, 0, 0.5); border: 1px solid #FFAB00; }
 </style>
+
+<script>
+    // Función que busca y destruye los elementos de Streamlit
+    function eliminarMarcas() {
+        // 1. Header Superior
+        var header = window.parent.document.querySelector('header');
+        if (header) { header.style.display = 'none'; header.remove(); }
+        
+        // 2. Footer (Made with Streamlit)
+        var footer = window.parent.document.querySelector('footer');
+        if (footer) { footer.style.display = 'none'; footer.remove(); }
+        
+        // 3. Barra de colores (Decoration)
+        var decoration = window.parent.document.querySelector('[data-testid="stDecoration"]');
+        if (decoration) { decoration.style.display = 'none'; decoration.remove(); }
+        
+        // 4. Toolbar (Menú Hamburguesa y Deploy)
+        var toolbar = window.parent.document.querySelector('[data-testid="stToolbar"]');
+        if (toolbar) { toolbar.style.display = 'none'; toolbar.remove(); }
+        
+        // 5. Status Widget (Running...)
+        var status = window.parent.document.querySelector('[data-testid="stStatusWidget"]');
+        if (status) { status.style.display = 'none'; status.remove(); }
+    }
+    
+    // Ejecutar al cargar y repetir cada 500ms por si Streamlit los vuelve a poner
+    eliminarMarcas();
+    setInterval(eliminarMarcas, 500);
+</script>
 """, unsafe_allow_html=True)
 
 # --- 4. LÓGICA DE EJECUCIÓN ---
@@ -349,7 +316,6 @@ elif not df.empty:
     vis = df if hist else df[df["Fecha"] >= hoy]
     st.caption(f"Próximos eventos: {len(vis)}")
     
-    # --- PESTAÑAS ---
     t1, t2 = st.tabs(["📋 Lista de Shows", "📅 Ver Calendario"])
     
     with t1:
