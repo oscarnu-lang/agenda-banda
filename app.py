@@ -149,7 +149,7 @@ st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Lobster&family=Montserrat:wght@400;800&display=swap');
 
-    /* LIMPIEZA DE INTERFAZ */
+    /* LIMPIEZA */
     [data-testid="stSidebarNav"], [data-testid="stSidebar"], [data-testid="stToolbar"], 
     [data-testid="stHeader"], [data-testid="stDecoration"], [data-testid="stFooter"], header, footer {display: none !important;}
     .block-container { padding-top: 1rem !important; padding-bottom: 5rem !important; }
@@ -157,11 +157,9 @@ st.markdown("""
     .stApp, h1, h2, h3, p, div { color: #E0E0E0; font-family: 'Montserrat', sans-serif; }
     
     /* CABECERA */
-    .titulo-contenedor { text-align: center; margin-bottom: 15px; margin-top: 0px; }
+    .titulo-contenedor { text-align: center; margin-bottom: 20px; margin-top: 0px; }
     .linea-superior { display: flex; justify-content: center; align-items: center; gap: 15px; margin-bottom: 5px; }
-    
     .iconos-header { font-size: 3.5rem; text-shadow: 0 0 15px rgba(255, 215, 0, 0.6); }
-    
     .highlight-agenda {
         font-family: 'Lobster', cursive; font-size: 6rem !important; font-weight: 400;
         background: -webkit-linear-gradient(#FFF700, #FF4500); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
@@ -169,12 +167,26 @@ st.markdown("""
         text-shadow: 0 0 15px rgba(255, 215, 0, 0.9), 0 0 30px rgba(255, 69, 0, 0.7), 5px 5px 8px #000000;
         margin: 0; padding-top: 10px; transform: rotate(-2deg) scale(1.05); z-index: 10;
     }
-
     .subtitulo-banda {
         font-family: 'Montserrat', sans-serif; font-size: 1.6rem !important; font-weight: 800;
         text-transform: uppercase; letter-spacing: 1px; color: #FFFFFF; text-shadow: 3px 3px 6px #000000;
         border-top: 3px solid #FF8C00; border-bottom: 3px solid #FF8C00; padding: 12px 0;
         margin-top: 10px; display: inline-block; line-height: 1.3;
+    }
+
+    /* ESTILOS DEL EXPANDER (Menú de Gestión) */
+    .streamlit-expanderHeader {
+        background-color: rgba(30, 30, 30, 0.6) !important;
+        border: 1px solid #444 !important;
+        border-radius: 8px !important;
+        color: #bbb !important;
+        font-size: 0.9rem !important;
+    }
+    .streamlit-expanderContent {
+        background-color: rgba(20, 20, 20, 0.8) !important;
+        border-radius: 0 0 8px 8px !important;
+        border: 1px solid #444 !important;
+        border-top: none !important;
     }
 
     @media only screen and (max-width: 600px) {
@@ -187,11 +199,10 @@ st.markdown("""
         .block-container { padding-left: 1rem !important; padding-right: 1rem !important; }
     }
 
-    /* TARJETAS */
+    /* TARJETAS Y BOTONES */
     .gig-card {
         background-color: rgba(20, 20, 20, 0.90); border-radius: 15px; padding: 20px;
-        margin-bottom: 15px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.8); border-left: 8px solid #555; backdrop-filter: blur(8px);
+        margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.8); border-left: 8px solid #555; backdrop-filter: blur(8px);
     }
     .status-confirmado { border-left-color: #00C853 !important; }
     .status-pendiente { border-left-color: #FFAB00 !important; }
@@ -215,7 +226,6 @@ st.markdown("""
     .today-day { border: 2px solid #FFAB00; border-radius: 50%; display: inline-block; width: 35px; height: 35px; line-height: 31px; }
     .empty-day { background-color: transparent; }
 
-    /* BOTONES FANTASMA */
     div[data-testid="stLinkButton"] > a {
         background-color: transparent !important; border: 1px solid #FFAB00 !important; color: #FFAB00 !important;
         font-weight: 600 !important; font-size: 0.8rem !important; text-transform: uppercase;
@@ -272,14 +282,14 @@ if not df.empty and fecha_url:
         else: st.warning("Sin datos para esta fecha.")
     except: st.error("Error en la fecha seleccionada.")
 
-# --- MODO PRINCIPAL (CON TOOLBAR CENTRAL) ---
+# --- MODO PRINCIPAL (CON MENU OCULTO) ---
 elif not df.empty:
     df["Fecha"] = pd.to_datetime(df["Fecha"], errors='coerce', dayfirst=True)
     df = df.dropna(subset=['Fecha']).sort_values(by="Fecha")
     dias_shows = df["Fecha"].dt.strftime('%Y-%m-%d').unique().tolist()
     hoy = pd.Timestamp.now().normalize()
 
-    # 1. TÍTULO (ARRIBA DEL TODO)
+    # 1. TÍTULO
     st.markdown("""
     <div class="titulo-contenedor">
     <div class="linea-superior"><span class="iconos-header">🎸</span><span class="highlight-agenda">Agenda</span><span class="iconos-header">🎷</span></div>
@@ -287,26 +297,22 @@ elif not df.empty:
     </div>
     """, unsafe_allow_html=True)
 
-    # 2. BARRA DE CONTROL (CENTRADA DEBAJO DEL TÍTULO)
-    # Usamos 3 columnas centradas: [Espacio | CONTROLES | Espacio]
-    col_izq, col_controles, col_der = st.columns([1, 3, 1])
-    
-    with col_controles:
-        # Dentro de la columna central, ponemos los 3 botones juntos
+    # 2. MENÚ DE GESTIÓN (EXPANDER OCULTO)
+    with st.expander("⚙️ Gestión / Herramientas"):
         c1, c2, c3 = st.columns(3)
         with c1:
-            hist = st.toggle("Historial", value=False)
+            hist = st.toggle("Ver Historial", value=False)
         with c2:
-            if st.button("🔄", help="Actualizar"): st.cache_data.clear()
+            if st.button("🔄 Actualizar Datos", help="Recargar Excel"): st.cache_data.clear()
         with c3:
-            # Filtro previo para imprimir lo correcto
-            vis = df if hist else df[df["Fecha"] >= hoy]
-            html_print = generar_html_para_imprimir(vis)
-            st.download_button("🖨️", html_print, file_name="agenda.html", mime="text/html")
+            # Filtro previo para imprimir
+            vis_print = df if hist else df[df["Fecha"] >= hoy]
+            html_print = generar_html_para_imprimir(vis_print)
+            st.download_button("🖨️ Imprimir Lista", html_print, file_name="agenda.html", mime="text/html")
 
-    # Filtro visual final
+    # Filtro visual principal
     vis = df if hist else df[df["Fecha"] >= hoy]
-    st.caption(f"Eventos visibles: {len(vis)}")
+    st.caption(f"Próximos eventos: {len(vis)}")
     
     # --- PESTAÑAS ---
     t1, t2 = st.tabs(["📋 Lista de Shows", "📅 Ver Calendario"])
