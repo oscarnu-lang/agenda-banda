@@ -50,6 +50,82 @@ def traducir_mes(f): return {"Jan":"ENE","Feb":"FEB","Mar":"MAR","Apr":"ABR","Ma
 def traducir_dia(f): return {0:"LUN",1:"MAR",2:"MIÉ",3:"JUE",4:"VIE",5:"SÁB",6:"DOM"}[f.weekday()]
 def mes_esp(n): return ["","Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"][n]
 
+# --- FUNCIÓN NUEVA: GENERAR HTML PARA IMPRIMIR ---
+def generar_html_para_imprimir(dataframe):
+    # Plantilla HTML simple y limpia (Fondo blanco, letras negras)
+    html = """
+    <html>
+    <head>
+        <style>
+            body { font-family: Arial, sans-serif; padding: 40px; color: black; background-color: white; }
+            h1 { text-align: center; color: #333; border-bottom: 2px solid #FF8C00; padding-bottom: 10px; }
+            .fecha-impresion { text-align: center; font-size: 0.9em; color: #666; margin-bottom: 30px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th { background-color: #f2f2f2; color: #333; padding: 12px; text-align: left; border-bottom: 2px solid #ddd; }
+            td { padding: 12px; border-bottom: 1px solid #eee; color: #000; }
+            tr:nth-child(even) { background-color: #f9f9f9; }
+            .status-ok { color: green; font-weight: bold; }
+            .status-warn { color: orange; font-weight: bold; }
+            .status-bad { color: red; font-weight: bold; }
+        </style>
+    </head>
+    <body>
+        <h1>🎸 Banda Departamental de Lavalleja</h1>
+        <div class="fecha-impresion">Reporte de Conciertos generado el: """ + datetime.now().strftime("%d/%m/%Y") + """</div>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>FECHA</th>
+                    <th>HORA</th>
+                    <th>LUGAR</th>
+                    <th>CIUDAD</th>
+                    <th>LOGÍSTICA</th>
+                    <th>ESTADO</th>
+                </tr>
+            </thead>
+            <tbody>
+    """
+    
+    # Rellenar la tabla con los datos
+    for index, row in dataframe.iterrows():
+        # Formatear fecha bonita
+        fecha_str = f"{row['Fecha'].day}/{row['Fecha'].month}/{row['Fecha'].year} ({traducir_dia(row['Fecha'])})"
+        
+        # Datos opcionales
+        logistica = ""
+        if pd.notna(row.get('Salida')): logistica += f"Salida: {row['Salida']} <br>"
+        if pd.notna(row.get('Prueba')): logistica += f"Prueba: {row['Prueba']}"
+        
+        # Color estado
+        est = row.get('Estado', 'Pendiente')
+        clase_estado = "status-ok" if est == "Confirmado" else "status-bad" if est == "Cancelado" else "status-warn"
+        
+        html += f"""
+            <tr>
+                <td>{fecha_str}</td>
+                <td>{row['Hora']} hs</td>
+                <td><strong>{row['Lugar']}</strong></td>
+                <td>{row.get('Ciudad', '')}</td>
+                <td><small>{logistica}</small></td>
+                <td><span class="{clase_estado}">{est}</span></td>
+            </tr>
+        """
+        
+    html += """
+            </tbody>
+        </table>
+        <br><br>
+        <div style="text-align: center; font-size: 0.8em; color: #999;">Documento de uso interno</div>
+        
+        <script>
+            window.onload = function() { window.print(); }
+        </script>
+    </body>
+    </html>
+    """
+    return html
+
 def crear_calendario(y, m, dias):
     cal = calendar.Calendar()
     html = '<div class="calendar-container"><table class="calendar-table"><thead><tr><th>L</th><th>M</th><th>M</th><th>J</th><th>V</th><th>S</th><th>D</th></tr></thead><tbody>'
@@ -113,30 +189,10 @@ st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Lobster&family=Montserrat:wght@400;800&display=swap');
 
-    /* --- LIMPIEZA PROFUNDA DE INTERFAZ (ELIMINAR ICONOS STREAMLIT) --- */
-    
-    /* 1. Ocultar Menú de 3 puntos y Header */
-    #MainMenu {visibility: hidden;}
-    header {visibility: hidden;}
-    
-    /* 2. Ocultar la barra de herramientas superior (Deploy, etc) */
-    [data-testid="stToolbar"] {visibility: hidden !important;}
-    
-    /* 3. Ocultar la línea de colores de decoración */
-    [data-testid="stDecoration"] {display: none;}
-    
-    /* 4. Ocultar el pie de página "Made with Streamlit" */
-    footer {visibility: hidden;}
-    
-    /* 5. Ocultar el icono de estado "Running" (arriba a la derecha) */
-    [data-testid="stStatusWidget"] {visibility: hidden;}
-
-    /* 6. Subir el contenido para aprovechar el espacio vacío del header */
-    .block-container {
-        padding-top: 1rem !important; 
-        padding-bottom: 5rem !important;
-    }
-    /* ---------------------------------------------------------------- */
+    /* LIMPIEZA DE INTERFAZ */
+    [data-testid="stSidebarNav"], [data-testid="stSidebar"], [data-testid="stToolbar"], 
+    [data-testid="stHeader"], [data-testid="stDecoration"], [data-testid="stFooter"], header, footer {display: none !important;}
+    .block-container { padding-top: 1.5rem !important; padding-bottom: 5rem !important; }
     
     .stApp, h1, h2, h3, p, div { color: #E0E0E0; font-family: 'Montserrat', sans-serif; }
     
@@ -200,7 +256,7 @@ st.markdown("""
     .today-day { border: 2px solid #FFAB00; border-radius: 50%; display: inline-block; width: 35px; height: 35px; line-height: 31px; }
     .empty-day { background-color: transparent; }
 
-    /* BOTONES FANTASMA (WIRE) */
+    /* BOTONES FANTASMA */
     div[data-testid="stLinkButton"] > a {
         background-color: transparent !important; border: 1px solid #FFAB00 !important; color: #FFAB00 !important;
         font-weight: 600 !important; font-size: 0.8rem !important; text-transform: uppercase;
@@ -265,12 +321,29 @@ if not df.empty:
             else: st.warning("Sin datos para esta fecha.")
         except: st.error("Error en la fecha seleccionada.")
     else:
-        c_sw, c_bt = st.columns([3,1])
-        with c_sw: hist = st.toggle("Ver historial", value=False)
-        with c_bt: 
-            if st.button("🔄"): st.cache_data.clear()
+        # --- BARRA DE HERRAMIENTAS SUPERIOR ---
+        c_sw, c_bt, c_dl = st.columns([2,1,1])
         
+        with c_sw: 
+            hist = st.toggle("Ver historial", value=False)
+        with c_bt: 
+            if st.button("🔄", help="Actualizar"): st.cache_data.clear()
+        
+        # Filtro de datos
         vis = df if hist else df[df["Fecha"] >= hoy]
+        
+        # BOTÓN DE DESCARGA (IMPRIMIR)
+        with c_dl:
+            # Generamos el HTML al vuelo
+            html_data = generar_html_para_imprimir(vis)
+            st.download_button(
+                label="🖨️",
+                data=html_data,
+                file_name="agenda_banda.html",
+                mime="text/html",
+                help="Descargar lista para imprimir"
+            )
+
         st.caption(f"Eventos visibles: {len(vis)}")
         
         t1, t2 = st.tabs(["📋 Lista de Shows", "📅 Ver Calendario"])
